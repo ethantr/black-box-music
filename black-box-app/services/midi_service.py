@@ -33,3 +33,8 @@ class MidiService:
         if self.outport:
             msg = mido.Message('note_on', note=note, velocity=velocity, channel=channel)
             self.outport.send(msg)
+
+    def send_note_off(self, note, velocity=0, channel=0):
+        if self.outport:
+            msg = mido.Message('note_off', note=note, velocity=velocity, channel=channel)
+            self.outport.send(msg)

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from services.serial_service import SerialService, auto_find_port, list_serial_ports
 from services.midi_service import MidiService, list_midi_outputs
+from services.mode_service import ModeService
 
 
 def launch_app():
@@ -35,6 +36,7 @@ class MidiSensorApp:
         # Services
         self.serial_service = SerialService(self.handle_sensor_data)
         self.midi_service = MidiService()
+        self.mode_service = ModeService(self.midi_service)
 
         # Variables
         self.serial_var = tk.StringVar()
@@ -61,6 +63,7 @@ class MidiSensorApp:
         self.root.rowconfigure(0, weight=1)
 
     def _build_ui(self):
+
         # Main container
         container = ttk.Frame(self.root, padding=12)
         container.grid(row=0, column=0, sticky='nsew')
@@ -80,10 +83,19 @@ class MidiSensorApp:
         self.midi_dropdown = ttk.Combobox(
             conn_frame, textvariable=self.midi_var, values=list_midi_outputs())
         self.midi_dropdown.grid(row=1, column=1, sticky='ew', padx=6, pady=(8,0))
+
         ttk.Button(conn_frame, text='Start',style='Accent.TButton', command=self.start).grid(
-            row=2, column=0, columnspan=2, sticky='ew', pady=(12,0))
+            row=3, column=0, columnspan=2, sticky='ew', pady=(12,0))
         ttk.Button(conn_frame, text='Disconnect', command=self.stop).grid(
-            row=3, column=0, columnspan=2, sticky='ew', pady=(6,0))
+            row=4, column=0, columnspan=2, sticky='ew', pady=(6,0))
+        
+
+        self.mode_var = tk.StringVar()
+        ttk.Label(conn_frame, text='Mode:').grid(row=2, column=0, sticky='w', pady=(8,0))
+        self.mode_dropdown = ttk.Combobox(
+            conn_frame, textvariable=self.mode_var, values=self.mode_service.list_modes())
+        self.mode_dropdown.grid(row=2, column=1, sticky='ew', padx=6, pady=(8,0))
+        self.mode_var.set(self.mode_service.list_modes()[0])
 
         # Sensor values frame
         sensor_frame = ttk.Labelframe(container, text='Sensor Values', padding=10)
@@ -104,6 +116,7 @@ class MidiSensorApp:
     def start(self):
         port = self.serial_var.get()
         midi_port = self.midi_var.get()
+        self.mode_service.set_mode(self.mode_var.get())
         if not port or not midi_port:
             self.status_text.set("Please select both ports.")
             return
@@ -128,9 +141,7 @@ class MidiSensorApp:
             distance = float(data.get('D', 0))
             noise = float(data.get('N', 0))
 
-            # Map pressure to MIDI velocity
-            velocity = min(max(int(pressure / 8), 0), 127)
-            self.midi_service.send_note(note=60, velocity=velocity)
+            self.mode_service.process(data)
 
             # Update UI
             self.pressure_val.set(f"{pressure:.1f}")
@@ -138,3 +149,5 @@ class MidiSensorApp:
             self.noise_val.set(f"{noise:.1f}")
         except Exception as e:
             self.status_text.set(f"Read error: {e}")
+        
+
