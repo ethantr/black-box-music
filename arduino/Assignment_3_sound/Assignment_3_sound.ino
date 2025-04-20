@@ -1,9 +1,9 @@
 #define sensorPin A0 
 const int trigPin = 11;
 const int echoPin = 10;
-float distance = 0.0; // Variable to store the distance value
-int noise = 0; // Variable to store the noise value
-int pressure = 0; // Variable to store the pressure value
+ // Variable to store the distance value
+float noise = 0; // Variable to store the noise value
+float pressure = 0; // Variable to store the pressure value
 
 void setup() {
   pinMode(trigPin, OUTPUT);  
@@ -20,14 +20,13 @@ float readDistance() {
   digitalWrite(trigPin, LOW);  
 
   float duration = pulseIn(echoPin, HIGH);  
-  distance = (duration*.0343)/2; 
-  
+  float distance = (duration*.0343)/2; 
   return distance;
 }
 
 void loop() {
 
-  distance = readDistance();
+  float distance = readDistance();
   noise = analogRead(sensorPin);
   pressure = (noise * 5.0) / 1023.0; // Convert to voltage
   pressure = (pressure - 0.5) * 100; // Convert to pressure in kPa
