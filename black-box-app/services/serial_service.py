@@ -57,8 +57,9 @@ class SerialService:
                 break
             try:
                 line = self.ser.readline().decode('utf-8').strip()
-                print(f"Serial read: {line}")  # Debugging line
+                
                 data = dict(item.split(":") for item in line.split(",") if ":" in item)
+                print(f"Serial read: {data}")  # Debugging line
                 self.callback(data)
             except Exception as e:
                 print(f"Serial read error: {e}")

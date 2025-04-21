@@ -28,6 +28,7 @@ void loop() {
 
   float distance = readDistance();
   noise = analogRead(sensorPin);
+  delay(25);
   pressure = (noise * 5.0) / 1023.0; // Convert to voltage
   pressure = (pressure - 0.5) * 100; // Convert to pressure in kPa
 
