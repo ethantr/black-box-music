@@ -22,6 +22,7 @@ def launch_app():
         print("[D] Disconnect")
         print("[M] Set MIDI output")
         print("[P] Set Serial port")
+        print("[O] Set Mode")
         print("[L] List sensor data (live)")
         print("[Q] Quit")
 
@@ -60,7 +61,7 @@ def launch_app():
             print("\nAvailable Serial Ports:")
             for i, port in enumerate(ports):
                 print(f"[{i}] {port}")
-            idx = input("Select Serial port #: ").strip()
+            idx = input("Select Serial port #: ").strip()    
             try:
                 current_serial = ports[int(idx)]
                 print(f"🧭 Selected Serial: {current_serial}")
@@ -75,6 +76,18 @@ def launch_app():
             except KeyboardInterrupt:
                 print("\n⏹️ Stopped live display.")
 
+        elif choice == 'o':
+            modes = mode_service.list_modes()
+            print("\nAvailable Modes:")
+            for i, mode in enumerate(modes):
+                print(f"[{i}] {mode}")
+            idx = input("Select Mode #: ").strip()
+            try:
+                selected_mode = modes[int(idx)]
+                mode_service.set_mode(selected_mode)
+                print(f"🧠 Mode set to: {selected_mode}")
+            except Exception:
+                print("❌ Invalid selection.")    
         elif choice == 'q':
             serial_service.disconnect()
             midi_service.disconnect()
