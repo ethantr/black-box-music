@@ -1,5 +1,11 @@
-# from ui.main_window import launch_app
-from ui.cli import launch_app
+from ui.main_window import launch_app as launch_gui
+from ui.cli import launch_app as launch_cli
 
 if __name__ == "__main__":
-    launch_app()
+    choice = input("Choose interface (GUI/CLI): ").strip().lower()
+    if choice == "gui":
+        launch_gui()
+    elif choice == "cli":
+        launch_cli()
+    else:
+        print("Invalid choice. Please choose 'GUI' or 'CLI'.")
