@@ -1,6 +1,7 @@
 #define sensorPin A0 
 const int trigPin = 11;
 const int echoPin = 10;
+const int ledEnable = 9;
  // Variable to store the distance value
 float noise = 0; // Variable to store the noise value
 float pressure = 0; // Variable to store the pressure value
@@ -31,6 +32,15 @@ void loop() {
   delay(25);
   pressure = (noise * 5.0) / 1023.0; // Convert to voltage
   pressure = (pressure - 0.5) * 100; // Convert to pressure in kPa
+
+  if (noise > 50) { 
+    digitalWrite(ledEnable, HIGH); 
+    delay(500);
+  } else { 
+    digitalWrite(ledEnable, LOW);
+  }
+
+
 
   // Print the values to the Serial Monitor
   Serial.print("D:");
