@@ -142,6 +142,7 @@ class MidiSensorApp:
             noise = float(data.get('N', 0))
 
             self.mode_service.process(data)
+            self.mode_service.tick()  # Call the tick method to process MIDI events
 
             # Update UI
             self.pressure_val.set(f"{pressure:.1f}")

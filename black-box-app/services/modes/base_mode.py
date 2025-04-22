@@ -6,3 +6,7 @@ class MidiMode:
 
     def process(self, data: dict):
         raise NotImplementedError("This should be implemented by subclasses")
+    
+    def tick(self):
+        """Call this regularly from the main loop."""
+        raise NotImplementedError("This should be implemented by subclasses")

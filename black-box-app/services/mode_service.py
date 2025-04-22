@@ -19,5 +19,9 @@ class ModeService:
     def process(self, data):
         self.active_mode.process(data)
 
+    def tick(self):
+        """Call this regularly from the main loop."""
+        self.active_mode.tick()
+
     def list_modes(self):
         return list(self.modes.keys())
