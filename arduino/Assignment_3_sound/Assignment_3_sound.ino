@@ -1,7 +1,9 @@
 #define sensorPin A0 
 const int trigPin = 11;
 const int echoPin = 10;
-const int ledEnable = 9;
+const int ledEnable = 12;
+const int ledEnable2 = 9;
+const int ledEnable3 = 8;
  // Variable to store the distance value
 float noise = 0; // Variable to store the noise value
 float pressure = 0; // Variable to store the pressure value
@@ -9,6 +11,9 @@ float pressure = 0; // Variable to store the pressure value
 void setup() {
   pinMode(trigPin, OUTPUT);  
 	pinMode(echoPin, INPUT);  
+  pinMode(ledEnable, OUTPUT);
+  pinMode(ledEnable2, OUTPUT); 
+  pinMode(ledEnable3, OUTPUT);
   Serial.begin(9600); 
 }
 
@@ -35,9 +40,13 @@ void loop() {
 
   if (noise > 50) { 
     digitalWrite(ledEnable, HIGH); 
-    delay(500);
+    digitalWrite(ledEnable2, HIGH); 
+    digitalWrite(ledEnable3, HIGH);
+    //delay(25);
   } else { 
     digitalWrite(ledEnable, LOW);
+    digitalWrite(ledEnable2, LOW); 
+    digitalWrite(ledEnable3, LOW);
   }
 
 
