@@ -1,12 +1,12 @@
 # Check if python is installed on MAC
-if ! command -v python &> /dev/null
+if ! command -v python3 &> /dev/null
 then
     echo "Python is not installed. Please install Python 3."
     exit
 fi
 
 # Check if pip is installed
-if ! command -v pip &> /dev/null
+if ! command -v pip3 &> /dev/null
 then
     echo "pip is not installed. Please install pip."
     exit
@@ -15,7 +15,7 @@ fi
 # Create a virtual environment
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."
-    python -m venv venv
+    python3 -m venv venv
 fi
 # Activate the virtual environment
 source venv/bin/activate
