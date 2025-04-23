@@ -25,7 +25,7 @@ class BoxTwoMode(MidiMode):
         self.latest_data = data
         distance = float(data.get('D', 0))
 
-        if distance > 50:
+        if distance < 100:
             if not self.active:
                 self.active = True
                 self.step_index = 0
@@ -47,6 +47,7 @@ class BoxTwoMode(MidiMode):
 
             notes = self.pattern[self.step_index % len(self.pattern)]
             velocity = self._get_velocity_from_distance()
+            self._pitch_bend_from_noise()
             for note in notes:
                 self.midi_service.send_note(note=note, velocity=velocity)
 
@@ -65,5 +66,14 @@ class BoxTwoMode(MidiMode):
     def _get_velocity_from_distance(self):
         if self.latest_data:
             distance = float(self.latest_data.get('D', 0))
-            return min(max(int(distance / 8), 30), 127)
+
+            return 127 - int(distance/2)  # Inverse relationship
         return 64
+    
+    def _pitch_bend_from_noise(self):
+        if self.latest_data:
+            noise = float(self.latest_data.get("N", 0))
+            # Clamp and scale noise: assume noise is 0–100
+            norm_noise = min(max(noise, 0), 100) / 100  # 0.0 to 1.0
+            pitch_bend = int((norm_noise * 2 - 1) * 8191)  # -8191 to +8191
+            self.midi_service.send_pitch_bend(value=pitch_bend)

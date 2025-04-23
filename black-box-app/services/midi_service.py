@@ -38,3 +38,16 @@ class MidiService:
         if self.outport:
             msg = mido.Message('note_off', note=note, velocity=velocity, channel=channel)
             self.outport.send(msg)
+
+
+    def send_control_change(self, control, value, channel=0):
+        msg = mido.Message('control_change', control=control, value=value, channel=channel)
+        self.outport.send(msg)
+
+    def send_pitch_bend(self, value, channel=0):
+    
+        value = int(min(max(value, -8192), 8191)) + 8192  # Convert to 14-bit unsigned
+        msg = mido.Message('pitchwheel', pitch=value, channel=channel)
+        self.output.send(msg)
+
+    

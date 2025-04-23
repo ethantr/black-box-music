@@ -75,9 +75,9 @@ void loop() {
   Serial.print(",P:");
   Serial.print(pressure);
   Serial.print(",N:");
-  Serial.print(noise);  
-  Serial.print(",B:");
-  Serial.println(ledBrightness);  
+  Serial.println(noise);  
+  // Serial.print(",B:");
+  // Serial.println(ledBrightness);  
   
 
   delayMicroseconds(10);
