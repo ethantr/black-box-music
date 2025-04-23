@@ -47,7 +47,7 @@ class BoxTwoMode(MidiMode):
 
             notes = self.pattern[self.step_index % len(self.pattern)]
             velocity = self._get_velocity_from_distance()
-            self._pitch_bend_from_noise()
+            # self._pitch_bend_from_noise()
             for note in notes:
                 self.midi_service.send_note(note=note, velocity=velocity)
 
