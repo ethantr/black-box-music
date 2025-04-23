@@ -9,10 +9,14 @@ class BoxTwoMode(MidiMode):
         self.step_duration = 60.0 / self.bpm  # in seconds
 
         self.pattern = [
-            [48,60],           # C4
+            [72+4,60],           # C4
             [62],           # D4
             [60, 64, 67],   # C major chord (C4, E4, G4)
             [65],           # F4
+            [72+5,60],           # C4
+            [],           # D4
+            [76],   # C major chord (C4, E4, G4)
+            [48],  
         ]
 
         self.active = False
@@ -34,6 +38,7 @@ class BoxTwoMode(MidiMode):
             if self.active:
                 self._turn_off_current_notes()
                 self.active = False
+            
 
     def tick(self):
         """Call this regularly from the main loop."""
