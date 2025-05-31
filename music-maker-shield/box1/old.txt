@@ -62,18 +62,6 @@ void midiCC(uint8_t ch, uint8_t cc, uint8_t val) {
   VS1053_MIDI.write(val);
 }
 
-// Scale definition (C major) and chords
-// const uint8_t scaleNotes[] = {60,62,64,65,67,69,71,72};
-// const uint8_t SCALE_LEN = sizeof(scaleNotes);
-// // Define triads by scale indices: I, IV, V, vi
-// const uint8_t chords[][3] = {
-//   {0,2,4}, // C major
-//   {3,5,0}, // F major
-//   {4,6,1}, // G major
-//   {5,7,2}  // A minor
-// };
-// const uint8_t NUM_CHORDS = sizeof(chords)/sizeof(chords[0]);
-
 const uint8_t scaleNotes[] = {69,70,71,72,73,74,75,76,77,78,79,80};  // A4 to F#5
 const uint8_t SCALE_LEN = sizeof(scaleNotes);
 // Define minor triads by chromatic indices relative to A4: root, minor third (+3), perfect fifth (+7)
