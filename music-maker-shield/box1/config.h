@@ -1,5 +1,6 @@
 #pragma once
 
+#define MASTER_VOLUME = 60;
 
 // Pin definitions
 #define VS1053_RX      2 // connects to VS1053 RX
@@ -7,7 +8,7 @@
 #define TRIG_PIN       3
 #define ECHO_PIN       4
 #define LED_PIN        5
-#define PRESSURE_PIN   A3
+#define PRESSURE_PIN   A0
 
 #define VS1053_BANK_MELODY  0x79
 #define VS1053_GM1_OCARINA   80
