@@ -1,6 +1,6 @@
 #pragma once
 
-#define MASTER_VOLUME = 60;
+#define MASTER_VOLUME 60
 
 // Pin definitions
 #define VS1053_RX      2 // connects to VS1053 RX
@@ -9,10 +9,14 @@
 #define ECHO_PIN       4
 #define LED_PIN        5
 #define PRESSURE_PIN   A0
+#define PRESSURE_PIN_2 A0  // or whatever pin you're using
+
 
 #define VS1053_BANK_MELODY  0x79
 #define VS1053_GM1_OCARINA   80
-#define VS1053_GM1_ECHOES   100
+#define VS1053_GM1_ECHOES   102
+#define VS1053_GM1_NEW_AGE  88
+
 #define MIDI_NOTE_ON       0x90
 #define MIDI_NOTE_OFF      0x80
 #define MIDI_CC            0xB0

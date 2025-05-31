@@ -5,6 +5,8 @@
 
 const uint8_t MAX_STEPS = 16;
 
+
+
 class Sequencer {
 public:
   Sequencer(uint16_t bpm, MidiInterface* midi);
