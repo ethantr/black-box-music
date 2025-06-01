@@ -1,6 +1,13 @@
 #include "Sequencer.h"
 #include <Arduino.h>
 
+const int LED_PIN = 6;
+
+int ledFadeDuration = 0;
+int ledTargetBrightness = 0;
+int ledStartBrightness = 0;
+unsigned long ledFadeStart = 0;
+
 Sequencer::Sequencer(uint16_t bpm, MidiInterface* midi)
   : bpm(bpm), midi(midi) {}
 
@@ -44,10 +51,32 @@ void Sequencer::update() {
     stepTimer = now + steps[currentStep].delayAfter;
     stepActive = false;
     currentStep = (currentStep + 1) % stepCount;
+    ledStartBrightness = ledTargetBrightness;
+  ledTargetBrightness = 0;
+  ledFadeStart = now;
+  ledFadeDuration = 200;
+  }
+
+  // Smooth LED fade
+  unsigned long fadeElapsed = millis() - ledFadeStart;
+  if (fadeElapsed < ledFadeDuration) {
+    float t = (float)fadeElapsed / ledFadeDuration;
+    uint8_t brightness = ledStartBrightness + (ledTargetBrightness - ledStartBrightness) * t;
+    analogWrite(LED_PIN, brightness);
+  } else {
+    analogWrite(LED_PIN, ledTargetBrightness);  // ensure final value is set
   }
 }
 
 void Sequencer::playStep(const Step& s) {
+
+  ledStartBrightness = analogRead(LED_PIN) / 4; // current LED brightness (approximate)
+  ledTargetBrightness = map(s.duration, 300, 3000, 50, 255);
+  ledTargetBrightness = constrain(ledTargetBrightness, 0, 255);
+  ledFadeStart = millis();
+  ledFadeDuration = 200;  // adjust fade speed (ms)
+
+
   for (uint8_t i = 0; i < s.noteCount; ++i) {
     const Note& note = s.notes[i];
     midi->noteOn(note.channel, note.pitch, note.velocity);

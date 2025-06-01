@@ -5,7 +5,10 @@
 
 const uint8_t MAX_STEPS = 16;
 
-
+extern int ledFadeDuration;
+extern int ledTargetBrightness;
+extern int ledStartBrightness;
+extern unsigned long ledFadeStart;
 
 class Sequencer {
 public:

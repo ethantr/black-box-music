@@ -1,5 +1,4 @@
 #include "config.h"
-#include "lfo.h"
 #include "midi_helpers.h"
 #include "chords.h"
 #include "ultrasonic.h"
