@@ -32,22 +32,37 @@ void setup() {
   sensor2.begin();
   pinMode(PRESSURE_PIN, INPUT);
 
-  // Chord 1: Ab (C Eb G) with low Ab
-  Note chord1[] = { {60, 100, 0}, {63, 100, 0}, {67, 100, 0}, {44, 90, 0} }; // + low Ab
-Step step1(chord1, 4, 3000, 400);
+ uint16_t dur = 120;  // Short note
+uint16_t gap = 80;   // Short pause
 
-// Chord 2: Bb (D F G) with low Bb
-Note chord2[] = { {62, 100, 0}, {65, 100, 0}, {67, 100, 0}, {46, 90, 0} }; // + low Bb
-Step step2(chord2, 4, 3000, 400);
+Note n0[] = { {60, 100, 0} }; // C
+Note n1[] = { {63, 100, 0} }; // Eb
+Note n2[] = { {67, 100, 0} }; // G
+Note n3[] = { {44, 90, 0} };  // low Ab
 
-// Chord 3: C (Eb G Ab) with low C
-Note chord3[] = { {63, 100, 0}, {67, 100, 0}, {68, 100, 0}, {48, 90, 0} }; // + low C
-Step step3(chord3, 4, 3000, 400);
+Note n4[] = { {62, 100, 0} }; // D
+Note n5[] = { {65, 100, 0} }; // F
+Note n6[] = { {46, 90, 0} };  // low Bb
 
-// Add to sequencer
-sequencer.addStep(step1);
-sequencer.addStep(step2);
-sequencer.addStep(step3);
+Note n7[] = { {68, 100, 0} }; // Ab
+Note n8[] = { {48, 90, 0} };  // low C
+
+Step steps[] = {
+  Step(n0, 1, dur, gap), Step(n1, 1, dur, gap),
+  Step(n2, 1, dur, gap), Step(n3, 1, dur, gap),
+
+  Step(n4, 1, dur, gap), Step(n5, 1, dur, gap),
+  Step(n2, 1, dur, gap), Step(n6, 1, dur, gap),
+
+  Step(n1, 1, dur, gap), Step(n2, 1, dur, gap),
+  Step(n7, 1, dur, gap), Step(n8, 1, dur, gap),
+
+  Step(n0, 1, dur, gap), Step(n4, 1, dur, gap),
+  Step(n5, 1, dur, gap), Step(n7, 1, dur, gap)
+};
+for (int i = 0; i < 16; i++) {
+  sequencer.addStep(steps[i]);
+}
 sequencer.reset();
 
 }
@@ -58,17 +73,6 @@ void loop() {
   sequencer.update();
 
   long distance = sensor2.getDistanceCM();
-
-  long pressure = analogRead(PRESSURE_PIN);
-  Serial.println(pressure);
-  uint8_t ccValue = map(pressure, 0, 1023, 0, 127);
-
-  Serial.println(ccValue);
-
-  // Send control changes on channel 0 (pad/chords)
-  midiCC(0, 11, ccValue);  // Expression
-  midiCC(0, 74, ccValue);  // Brightness
-  midiCC(0, 1, ccValue);  // Reverb amount
 
  
 }
