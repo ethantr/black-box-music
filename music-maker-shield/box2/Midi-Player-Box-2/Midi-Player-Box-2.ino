@@ -105,8 +105,8 @@ const long interval = 1000;  // interval at which to blink (milliseconds)
 #define TRIG_PIN 3
 #define ECHO_PIN 4
 
-#define TRIG_PIN2 9 
-#define ECHO_PIN2 10
+#define TRIG_PIN2 10 
+#define ECHO_PIN2 9
 
 long getDistanceCM() {
   digitalWrite(TRIG_PIN, LOW);
