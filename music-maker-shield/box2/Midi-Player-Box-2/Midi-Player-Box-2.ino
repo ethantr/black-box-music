@@ -23,42 +23,45 @@ void setup() {
   digitalWrite(VS1053_RESET, HIGH);
   delay(10);
 
-  midiSetChannelBank(0, VS1053_BANK_MELODY);
-  midiSetInstrument(0, 103);
+  midiSetChannelBank(0, VS1053_BANK_DRUMS1);
+  midiSetInstrument(0, 56);
   midiSetChannelVolume(0, MASTER_VOLUME);
 
   pinMode(LED_PIN, OUTPUT);
   sensor1.begin();
   sensor2.begin();
   pinMode(PRESSURE_PIN, INPUT);
+uint16_t drum_dur = 300;  // Very short note duration
+uint16_t drum_gap = 80;  // Short gap between notes
 
- uint16_t dur = 120;  // Short note
-uint16_t gap = 80;   // Short pause
+// Basic drum sounds
+Note kick[] = { {36, 100, 0} };        // Acoustic Bass Drum
+Note snare[] = { {38, 100, 0} };       // Acoustic Snare
+Note closed_hihat[] = { {42, 80, 0} };  // Closed Hi-Hat
+Note open_hihat[] = { {46, 85, 0} };    // Open Hi-Hat
 
-Note n0[] = { {60, 100, 0} }; // C
-Note n1[] = { {63, 100, 0} }; // Eb
-Note n2[] = { {67, 100, 0} }; // G
-Note n3[] = { {44, 90, 0} };  // low Ab
-
-Note n4[] = { {62, 100, 0} }; // D
-Note n5[] = { {65, 100, 0} }; // F
-Note n6[] = { {46, 90, 0} };  // low Bb
-
-Note n7[] = { {68, 100, 0} }; // Ab
-Note n8[] = { {48, 90, 0} };  // low C
-
+// Standard rock drum pattern (16 steps)
+// Pattern: K-H-S-H-K-K-S-H-K-H-S-H-K-H-S-OH
 Step steps[] = {
-  Step(n0, 1, dur, gap), Step(n1, 1, dur, gap),
-  Step(n2, 1, dur, gap), Step(n3, 1, dur, gap),
-
-  Step(n4, 1, dur, gap), Step(n5, 1, dur, gap),
-  Step(n2, 1, dur, gap), Step(n6, 1, dur, gap),
-
-  Step(n1, 1, dur, gap), Step(n2, 1, dur, gap),
-  Step(n7, 1, dur, gap), Step(n8, 1, dur, gap),
-
-  Step(n0, 1, dur, gap), Step(n4, 1, dur, gap),
-  Step(n5, 1, dur, gap), Step(n7, 1, dur, gap)
+  Step(kick, 1, drum_dur, drum_gap),        // Beat 1
+  Step(closed_hihat, 1, drum_dur, drum_gap), // &
+  Step(snare, 1, drum_dur, drum_gap),       // Beat 2
+  Step(closed_hihat, 1, drum_dur, drum_gap), // &
+  
+  Step(kick, 1, drum_dur, drum_gap),        // Beat 3
+  Step(kick, 1, drum_dur, drum_gap),        // & (double kick)
+  Step(snare, 1, drum_dur, drum_gap),       // Beat 4
+  Step(closed_hihat, 1, drum_dur, drum_gap), // &
+  
+  Step(kick, 1, drum_dur, drum_gap),        // Beat 1
+  Step(closed_hihat, 1, drum_dur, drum_gap), // &
+  Step(snare, 1, drum_dur, drum_gap),       // Beat 2
+  Step(closed_hihat, 1, drum_dur, drum_gap), // &
+  
+  Step(kick, 1, drum_dur, drum_gap),        // Beat 3
+  Step(closed_hihat, 1, drum_dur, drum_gap), // &
+  Step(snare, 1, drum_dur, drum_gap),       // Beat 4
+  Step(open_hihat, 1, drum_dur, drum_gap)   // & (open hi-hat accent)
 };
 for (int i = 0; i < 16; i++) {
   sequencer.addStep(steps[i]);
@@ -70,9 +73,29 @@ sequencer.reset();
 
 void loop() {
 
+  long distance = sensor1.getDistanceCM();
+  long distance2 = sensor2.getDistanceCM();
+  
+  long modDistance = map(distance, 5, 50, 100, 300);
+  int dynamicVelocity = map(distance2, 5, 50, 100, 40);             // Shorter = louder
+  dynamicVelocity = constrain(dynamicVelocity, 40, 127);
+  long ledBrightness = map(distance, 5, 50, 255, 100);
+  ledBrightness = constrain(ledBrightness, 0, 255);
+
+  Serial.print("Brightness: "); 
+  Serial.println(ledBrightness);
+  
+    for (int i = 0; i < 16; i++) { 
+      if (distance < 50) {
+        sequencer.setDuration(modDistance, i);
+      } else { 
+        sequencer.setDuration(300, i);
+      }
+      sequencer.setVelocity(dynamicVelocity, i);
+  }
+
+  analogWrite(LED_PIN,ledBrightness);
   sequencer.update();
 
-  long distance = sensor2.getDistanceCM();
-
- 
+  //delay(2000);
 }

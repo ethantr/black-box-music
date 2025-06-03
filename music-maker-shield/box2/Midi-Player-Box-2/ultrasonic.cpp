@@ -21,13 +21,14 @@ const int MAX_DISTANCE_CM = 400;
   float distanceCM = (duration * speedOfSound) / 2.0; // One-way trip
   
 
+/*
   if (DEBUG_ULTRASONIC) {
     Serial.print("[");
   Serial.print(sensorName);
   Serial.print("] Distance: ");
   Serial.print(distanceCM);
   Serial.println(" cm");
-}
+}*/
 
   return constrain(distanceCM, MIN_DISTANCE_CM, MAX_DISTANCE_CM);
 }
