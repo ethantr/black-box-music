@@ -18,6 +18,7 @@ public:
   void setStep(uint8_t index, const Step& step);
   void setDuration(uint16_t d, uint8_t index);
   void setVelocity(uint8_t v, uint8_t index);
+  void setGap(uint16_t g, uint8_t index);
   void clear();
   void reset();
   void update();

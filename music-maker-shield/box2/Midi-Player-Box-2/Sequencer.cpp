@@ -25,6 +25,10 @@ void Sequencer::setDuration(uint16_t d, uint8_t index) {
   steps[index].duration = d;
 }
 
+void Sequencer::setGap(uint16_t g, uint8_t index) { 
+  steps[index].delayAfter = g;
+}
+
 void Sequencer::setVelocity(uint8_t v, uint8_t index) { 
   for (uint8_t i = 0; i < steps[index].noteCount; ++i) {
     steps[index].notes[i].velocity = v;
