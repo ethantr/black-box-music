@@ -10,7 +10,7 @@
 
 class ChordGenerator {
 public:
-  static const uint8_t CHORD_COUNT = 3;
+  static const uint8_t CHORD_COUNT = 6;
   static const uint8_t NOTES_PER_CHORD = 4;
   static const uint8_t PROG_LENGTH = 8;
 

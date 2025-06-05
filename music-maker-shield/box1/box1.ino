@@ -48,7 +48,7 @@ void setup() {
   midiSetInstrument(0, 90);
   midiSetChannelVolume(0, MASTER_VOLUME);
 
-  // Sequencer B (Melody/Lead) → Channel 1, “Flute” = 73
+  // Sequencer B (Melody/Lead) → Channel 1, 
   midiSetChannelBank(1, VS1053_BANK_MELODY);
   midiSetInstrument(1, 104);
   midiSetChannelVolume(1, MASTER_VOLUME);
@@ -105,7 +105,7 @@ void loop() {
 
   // 5) Read sensor2 for melody interactions:
   long raw2 = sensor2.read();               
-  float p2Norm = constrain(raw2 / 1023.0, 0.0, 1.0);
+  float p2Norm = constrain(raw2 / 2000, 0.0, 1.0);
 
   // 5a) Map sensor2 to “modulation” CC on Channel 1 (vibrato)
   uint8_t ccMod = map(raw2, 0, 1023, 0, 127);
