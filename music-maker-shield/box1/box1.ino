@@ -1,186 +1,159 @@
-#include "config.h"           // Your pin definitions, MASTER_VOLUME, etc.
+#include "config.h"             // Your pin definitions, MASTER_VOLUME, etc.
 #include "midi_helpers.h"
 #include "PressureSensor.h"
 #include "VS1053MidiInterface.h"
-#include "Sequencer.h"
-#include "Step.h"
-#include "Note.h"
-
-#include "ChordGenerator.h"
-#include "LFO.h"
+#include "ChordGenerator.h"      // Use chord generator to pick notes
 
 // Two pressure sensors:
-PressureSensor sensor1 = PressureSensor(PRESSURE_PIN, "Pressure 1");
+//   • sensor1 controls note intensity (velocity).
+//   • sensor2 triggers generation/regen of melody.
+PressureSensor sensor1 = PressureSensor(PRESSURE_PIN,   "Pressure 1");
 PressureSensor sensor2 = PressureSensor(PRESSURE_PIN_2, "Pressure 2");
 
-// One shared MIDI interface (the VS1053) on channels 0 and 1
+// One shared MIDI interface (the VS1053) on channel 1
 VS1053MidiInterface midiInterface;
 
-// Two independent Sequencers
-Sequencer sequencer(90, &midiInterface);   // Box A: pads/chords (slower BPM)
-Sequencer sequencer2(120, &midiInterface); // Box B: melody (faster BPM)
-
+// Chord generator for progression and note choices
 ChordGenerator chordGen;
-LFO         brightnessLFO(0.2, 20, 80);    // Initial slow LFO (0.2 Hz, range 20–80)
 
-int currentMelodyStep = 0;
-unsigned long lastChordTime = 0;
+// MIDI channel for melody
+const int CHANNEL = 1;
+
+//───────────────────────────────────────────────────────────────────────────────
+// ** REAL-TIME NOTE-TRIGGER STATE **
+unsigned long lastTouchTime = 0;                // last time sensor 2 was “active”
+bool        isIdle       = false;               // are we currently in the “quiet” state?
+const unsigned long IDLE_TIMEOUT = 5000;        // 5 000 ms of no touch → idle
+
+// To debounce sensor 2 and avoid cutting notes too close together:
+const unsigned long NOTE_DEBOUNCE_MS = 200;     // require 200 ms between triggers
+unsigned long lastNoteTrigger = 0;
+
+// Remember which pitch is currently “on” so we can turn it off later:
+int  activePitch   = -1;                        
+long noteOffTime   = 0;                         
 
 void setup() {
   Serial.begin(9600);
 
-  // Initialize hardware & sensors
+  // Initialise VS1053 MIDI at 31250 baud
   VS1053_MIDI.begin(31250);
   pinMode(VS1053_RESET, OUTPUT);
   digitalWrite(VS1053_RESET, LOW);
   delay(10);
   digitalWrite(VS1053_RESET, HIGH);
   delay(10);
+
+  // LED to indicate idle (optional)
   pinMode(LED_PIN, OUTPUT);
+
+  // Initialise both sensors
   sensor1.begin();
   sensor2.begin();
 
-  // ChordGenerator setup
+  // Initialise chord generator and build an 8-step progression
   chordGen.begin();
-
-  // Sequencer A (Chord/Pad) → Channel 0, “Pad 1 (New Age)” = 88
-  midiSetChannelBank(0, VS1053_BANK_MELODY);
-  midiSetInstrument(0, 90);
-  midiSetChannelVolume(0, MASTER_VOLUME);
-
-  // Sequencer B (Melody/Lead) → Channel 1, 
-  midiSetChannelBank(1, VS1053_BANK_MELODY);
-  midiSetInstrument(1, 104);
-  midiSetChannelVolume(1, MASTER_VOLUME);
-
-  // LFO initialisation (for CC 74 on Channel 0)
-  brightnessLFO.begin();
-
-  // Build an initial 8‐step chord progression (no bias)
   chordGen.regenerate(false);
-  loadChordsIntoSequencer();
 
-  // Build an initial 8‐step melody that matches the chords
-  generateMelodySteps();
+  // Setup Channel 1 for “Lead 1 (Square)” = 104
+  midiInterface.setBank(CHANNEL, VS1053_BANK_MELODY);
+  midiSetInstrument(CHANNEL, 104);
+  midiInterface.setVolume(CHANNEL, MASTER_VOLUME);
+
+  // Prime the idle timer so we start “active”
+  lastTouchTime = millis();
 }
 
 void loop() {
   unsigned long now = millis();
 
-  // 1) Update Sequencers:
-  sequencer.update();
-  sequencer2.update();
+  //────────────────────────────────────────────────────────────────────────────
+  // 1) HANDLE IDLE DETECTION (sensor 2 drives idle state)
+  long raw2 = sensor2.read();
+  if (raw2 > 40) {
+    // We consider any reading > 40 as “touch.”
+    lastTouchTime = now;
+    if (isIdle) {
+      isIdle = false;
+      midiInterface.setVolume(CHANNEL, MASTER_VOLUME);
+      // Regenerate a fresh chord progression whenever we “wake up.”
+      chordGen.regenerate(false);
+    }
+  } 
+  else if (!isIdle && (now - lastTouchTime > IDLE_TIMEOUT)) {
+    // Went idle: fade out and silence everything
+    isIdle = true;
+    goQuietMelody();
+  }
+  //────────────────────────────────────────────────────────────────────────────
 
-  // 2) Read sensor1, map to normalized 0..1
-  long raw1 = sensor1.read();               
-  float p1Norm = constrain(raw1 / 1023.0, 0.0, 1.0);
+  // 2) IF NOT IDLE, CHECK FOR NEW NOTE TRIGGER ON sensor 2
+  if (!isIdle) {
+    // Debounce so we don’t retrigger too fast:
+    if (raw2 > 700 && (now - lastNoteTrigger > NOTE_DEBOUNCE_MS)) {
+      triggerNextNote();
+      lastNoteTrigger = now;
+      lastTouchTime   = now;                   // also keeps us out of idle
+    }
 
-  // 3) Regenerate chords at a rate inversely proportional to pressure:
-  unsigned long regenInterval = map(raw1, 0, 1023, 8000, 1000);
-  if (now - lastChordTime > regenInterval) {
-    bool biasRepeat = (p1Norm > 0.7);
-    chordGen.regenerate(biasRepeat);
-    loadChordsIntoSequencer();
-    regeneratingFeedback();
-    lastChordTime = now;
+    // 3) TURN‐OFF any note that needs silencing
+    if (activePitch >= 0 && now >= noteOffTime) {
+      midiNoteOff(CHANNEL, activePitch, 0);
+      activePitch = -1;
+    }
   }
 
-  // 4) Drive an LFO for filter cutoff (CC 74) and resonance (CC 71) on Channel 0:
-  //
-  //    - LFO frequency: 0.05 Hz (very slow) → 2.0 Hz (fast) as pressure climbs.  
-  //    - LFO depth (min..max): (40..100) → (80..127) as pressure climbs (so resonance is more obvious).
-  float lfoFreq = 0.05 + p1Norm * 1.95;       // 0.05 Hz … 2.0 Hz
-  uint8_t lfoMin  = 40  + (uint8_t)(p1Norm * 40);  // e.g. 40 … 80
-  uint8_t lfoMax  = 100 + (uint8_t)(p1Norm * 27);  // e.g. 100 … 127
+  // 4) FEEDBACK (optional)
+  Serial.print("VelSensor raw1 = ");
+  Serial.print(sensor1.read());
+  Serial.print("   GenSensor raw2 = ");
+  Serial.println(raw2);
+}
 
-  brightnessLFO.setFreq(lfoFreq);
-  brightnessLFO.setDepth(lfoMin, lfoMax);
-  uint8_t ccVal = brightnessLFO.update();
 
-  // Send both CC 74 (cutoff) and CC 71 (resonance) on Channel 0:
-  midiCC(0, 74, ccVal);                    // CC 74: Filter Cutoff
-  // For resonance, we map ccVal into a higher baseline so the “peak” is more obvious:
-  uint8_t ccRes = map(ccVal, 0, 127, lfoMin, 127);
-  midiCC(0, 71, ccRes);                    // CC 71: Filter Resonance (Q)
+//───────────────────────────────────────────────────────────────────────────────
+// Play exactly one short note each time sensor 2 is pressed. Velocity is read
+// from sensor 1 at the instant of trigger. Pitch is one of the top 3 voices
+// of the next chord in the progression. The note will be turned off 200 ms later.
 
-  // 5) Read sensor2 for melody interactions:
-  long raw2 = sensor2.read();               
-  float p2Norm = constrain(raw2 / 2000, 0.0, 1.0);
+void triggerNextNote() {
+  // 1) Read raw1 → velocity (60..127 range)
+  long raw1 = sensor1.read();
+  uint8_t vel = map(raw1, 0, 1023, 60, 127);
 
-  // 5a) Map sensor2 to “modulation” CC on Channel 1 (vibrato)
-  uint8_t ccMod = map(raw2, 0, 1023, 0, 127);
-  midiCC(1, 1, ccMod);   // CC 1: Modulation Wheel
+  // 2) Advance chord progression based on raw2 (pressure) bias:
+  uint8_t chordIdx = chordGen.nextChord(sensor2.read());
 
-  // 5b) Map sensor2 to “reverb” CC on Channel 1
-  uint8_t ccRev = map(raw2, 0, 1023, 20, 100);
-  midiCC(1, 91, ccRev);  // CC 91: Reverb Send
+  // 3) Pick a random chord‐tone among the top 3 voices
+  uint8_t toneIdx  = random(3);  
+  uint8_t basePitch = ChordGenerator::chordVoices[chordIdx][toneIdx];
 
-  // 6) If sensor2 is pressed above a threshold, insert a staccato flourish
-  static unsigned long lastInsert = 0;
-  if (raw2 > 700 && now - lastInsert > 500) {
-    insertStaccatoFlourish(currentMelodyStep, p2Norm);
-    currentMelodyStep = (currentMelodyStep + 1) % 16;
-    lastInsert = now;
+  // 4) Optionally transpose to taste (e.g. +12 for one octave up):
+  uint8_t pitch = basePitch + 12; 
+
+  // 5) Send noteOn immediately:
+  midiNoteOn(CHANNEL, pitch, vel);
+  activePitch = pitch;
+  noteOffTime = millis() + 200;   // hold for 200 ms then turn off
+}
+
+
+//───────────────────────────────────────────────────────────────────────────────
+// Gradually fade Channel 1 from MASTER_VOLUME → 0, then clear activePitch
+
+void goQuietMelody() {
+  const uint8_t stepSize  = 5;      // volume decrement per step (5/127)
+  const uint16_t stepDelay = 50;    // ms delay between steps to make fade faster
+
+  for (int vol = MASTER_VOLUME; vol > 0; vol -= stepSize) {
+    midiInterface.setVolume(CHANNEL, vol);
+    delay(stepDelay);
+  }
+  midiInterface.setVolume(CHANNEL, 0);
+
+  // If a note is still on, turn it off immediately:
+  if (activePitch >= 0) {
+    midiNoteOff(CHANNEL, activePitch, 0);
+    activePitch = -1;
   }
 }
-
-// Helper: blink LED quickly to show chord regeneration
-void regeneratingFeedback() {
-  digitalWrite(LED_PIN, HIGH);
-  delay(80);
-  digitalWrite(LED_PIN, LOW);
-}
-
-// Load all 8 generated chords into sequencer (Box A)
-void loadChordsIntoSequencer() {
-  sequencer.clear();
-  for (uint8_t i = 0; i < ChordGenerator::PROG_LENGTH; i++) {
-    uint8_t cIdx = chordGen.progression[i];
-    // Build a 4‐note voicing: root, third, fifth, low bass:
-    Note notes[4] = {
-      { ChordGenerator::chordVoices[cIdx][0], 80, 0 },
-      { ChordGenerator::chordVoices[cIdx][1], 75, 0 },
-      { ChordGenerator::chordVoices[cIdx][2], 75, 0 },
-      { ChordGenerator::chordVoices[cIdx][3], 65, 0 }
-    };
-    Step s(notes, 4, 3000, 200);
-    sequencer.addStep(s);
-  }
-  sequencer.reset();
-}
-
-// Generate the initial 16‐step melody (Box B) based on the current progression
-void generateMelodySteps() {
-  sequencer2.clear();
-  for (uint8_t i = 0; i < 16; i++) {
-    uint8_t chordIdx = chordGen.progression[i % ChordGenerator::PROG_LENGTH];
-    // pick a random chord tone among the top 3 (ignore the low bass at index 3)
-    uint8_t toneIndex = random(3);
-    uint8_t pitch = ChordGenerator::chordVoices[chordIdx][toneIndex] + 12; 
-
-    // Wrap the three values in braces for the single Note array element:
-    Note mel[1] = { { pitch, 80, 1 } };
-
-    Step s(mel, 1, 400, 100);
-    sequencer2.addStep(s);
-  }
-  sequencer2.reset();
-}
-
-
-// Insert a quick staccato flourish two octaves above the chosen chord tone
-void insertStaccatoFlourish(int idx, float p2Norm) {
-  uint8_t chordIdx = chordGen.progression[idx % ChordGenerator::PROG_LENGTH];
-  uint8_t toneIdx = random(3);
-  uint8_t pitch = ChordGenerator::chordVoices[chordIdx][toneIdx] + 24;
-  uint8_t vel = map((int)(p2Norm * 1023), 0, 1023, 60, 127);
-
-  // Again, wrap the values in braces for the single Note object:
-  Note mel[1] = { { pitch, vel, 1 } };
-
-  uint16_t dur   = 200;                                // very short
-  uint16_t delay = map((int)(p2Norm * 1023), 0, 1023, 200, 50);
-  Step s(mel, 1, dur, delay);
-  sequencer2.setStep(idx, s);
-}
-
