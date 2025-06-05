@@ -6,7 +6,8 @@
 const uint8_t MAX_NOTES_PER_STEP = 4;
 
 // This struct represents a step in the sequencer, containing multiple notes and their properties.
-//  Example usage: Step step1 = Step({Note(60, 90, 0), Note(62, 90, 0)}, 2, 500, 100); // Creates a step with two notes, each with a duration of 500ms and a delay of 100ms after the step.
+//  Example usage: Step step1 = Step({Note(60, 90, 0), Note(62, 90, 0)}, 2, 500, 100); 
+// Creates a step with two notes, each with a duration of 500ms and a delay of 100ms after the step.
 struct Step {
   Note notes[MAX_NOTES_PER_STEP];
   uint8_t noteCount = 0;

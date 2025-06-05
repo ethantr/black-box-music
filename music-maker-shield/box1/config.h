@@ -7,9 +7,11 @@
 #define VS1053_RESET   9 // connects to VS1053 RESET (if needed)
 #define TRIG_PIN       3
 #define ECHO_PIN       4
+
+
 #define LED_PIN        6
 #define PRESSURE_PIN   A0
-#define PRESSURE_PIN_2 A0  // or whatever pin you're using
+#define PRESSURE_PIN_2 A4  // or whatever pin you're using
 
 
 #define VS1053_BANK_MELODY  0x79
