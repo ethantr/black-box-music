@@ -82,6 +82,8 @@ void Sequencer::update() {
   }
 }
 
+
+
 void Sequencer::playStep(const Step& s) {
 
   ledStartBrightness = analogRead(LED_PIN) / 4; // current LED brightness (approximate)
